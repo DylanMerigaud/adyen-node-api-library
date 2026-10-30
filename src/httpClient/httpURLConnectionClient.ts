@@ -33,6 +33,7 @@ import ClientInterface from "./clientInterface";
 import { ApiConstants } from "../constants/apiConstants";
 import { IRequest } from "../typings/requestOptions";
 import checkServerIdentity from "../helpers/checkServerIdentity";
+import { removeHeaders } from "../helpers/requestForm";
 
 class HttpURLConnectionClient implements ClientInterface {
     private static CHARSET = "utf-8";
@@ -225,7 +226,8 @@ class HttpURLConnectionClient implements ClientInterface {
                                     port: url.port || (url.protocol === "https:" ? 443 : 80),
                                     path: url.pathname + url.search,
                                     method: connectionRequest.method,
-                                    headers: connectionRequest.getHeaders(),
+                                    // the first request's Host would override the redirect target's
+                                    headers: removeHeaders(connectionRequest.getHeaders(), ["Host"]),
                                     protocol: url.protocol,
                                     agent: url.protocol === "https:" ? requestAgent : undefined,
                                 };

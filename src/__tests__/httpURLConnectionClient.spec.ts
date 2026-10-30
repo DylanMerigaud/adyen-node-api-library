@@ -108,6 +108,32 @@ describe("HttpURLConnectionClient", () => {
         expect(redirectedBody.equals(body)).toBe(true);
     });
 
+    test("sends the Host of the redirect target after a 308 redirect", async () => {
+        let redirectedHost: string | string[] | undefined;
+
+        nock("https://terminal-api-live.adyen.com")
+            .post("/sync")
+            .reply(308, "", {
+                Location: "https://terminal-api-live-us.adyen.com/sync",
+            });
+        const targetScope = nock("https://terminal-api-live-us.adyen.com")
+            .post("/sync")
+            .reply(200, function () {
+                redirectedHost = this.req.headers.host;
+                return "{}";
+            });
+
+        await client.request(
+            "https://terminal-api-live.adyen.com/sync",
+            "{}",
+            new Config({ apiKey: "test-api-key", environment: EnvironmentEnum.LIVE }),
+            true,
+        );
+
+        expect(targetScope.isDone()).toBe(true);
+        expect(redirectedHost).toBe("terminal-api-live-us.adyen.com");
+    });
+
     describe("multi-byte characters split across response chunks", () => {
         const name = "José Müller 北京 😀";
         const config = new Config({apiKey: "test-api-key", environment: EnvironmentEnum.TEST});
